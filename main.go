@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	Width  = 40
-	Height = 20
+	Width  = 45
+	Height = 25
 )
 
 type Position struct {
@@ -182,10 +182,29 @@ func (g *Game) draw() {
 
 	// Print stats
 	printLn("")
-	printLn("╔═══════════════════════════════════════╗")
-	printLn(fmt.Sprintf("║ Level: %-3d Score: %-6d Berries: %d/%d ║",
-		g.Level, g.Score, g.BerriesNeeded-len(g.Berries), g.BerriesNeeded))
-	printLn("╚═══════════════════════════════════════╝")
+	
+	top := "╔"
+	bottom := "╚"
+	for i := 0; i < Width-2; i++ {
+		top += "═"
+		bottom += "═"
+	}
+	top += "╗"
+	bottom += "╝"
+	
+	stats := fmt.Sprintf(" Level: %-3d Score: %-6d Berries: %d/%d",
+		g.Level, g.Score, g.BerriesNeeded-len(g.Berries), g.BerriesNeeded)
+	
+	// Pad stats line to match Width
+	line := "║" + stats
+	for len([]rune(line)) < Width-1 {
+		line += " "
+	}
+	line += "║"
+
+	printLn(top)
+	printLn(line)
+	printLn(bottom)
 	printLn("")
 	printLn("Controls: W=Up, S=Down, A=Left, D=Right, Q=Quit")
 
