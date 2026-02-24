@@ -128,34 +128,34 @@ func (g *Game) initLevel() {
 func (g *Game) draw() {
 	clearScreen()
 
+	// ANSI color constants
+	const (
+		ColorReset  = "\033[0m"
+		ColorRed    = "\033[31m"
+		ColorGreen  = "\033[32m"
+		ColorYellow = "\033[33m"
+		ColorBlue   = "\033[34m"
+		ColorCyan   = "\033[36m"
+	)
+
 	if !g.Started {
-		printLn("╔═══════════════════════════════════════════╗")
+		printLn(ColorCyan + "╔═══════════════════════════════════════════╗" + ColorReset)
+		printLn(ColorCyan + "║                                           ║" + ColorReset)
+		printLn(ColorCyan + "║   ██   ██  ███████   █████   ██████       ║" + ColorReset)
+		printLn(ColorCyan + "║    ██ ██      ███   ██   ██  ██   ██      ║" + ColorReset)
+		printLn(ColorCyan + "║     ███      ███    ███████  ██████       ║" + ColorReset)
+		printLn(ColorCyan + "║    ██ ██    ███     ██   ██  ██           ║" + ColorReset)
+		printLn(ColorCyan + "║   ██   ██  ███████  ██   ██  ██           ║" + ColorReset)
+		printLn(ColorCyan + "║                                           ║" + ColorReset)
+		printLn(ColorCyan + "╠═══════════════════════════════════════════╣" + ColorReset)
 		printLn("║                                           ║")
-		printLn("║   ██   ██  ███████   █████   ██████       ║")
-		printLn("║    ██ ██      ███   ██   ██  ██   ██      ║")
-		printLn("║     ███      ███    ███████  ██████       ║")
-		printLn("║    ██ ██    ███     ██   ██  ██           ║")
-		printLn("║   ██   ██  ███████  ██   ██  ██           ║")
-		printLn("║                                           ║")
-		printLn("╠═══════════════════════════════════════════╣")
-		printLn("║                                           ║")
-		printLn("║   Collect berries, avoid the aliens!      ║")
+		printLn("║   " + ColorGreen + "Collect berries" + ColorReset + ", avoid the " + ColorRed + "aliens!" + ColorReset + "      ║")
 		printLn("║                                           ║")
 		printLn("║      W/A/S/D to move, Q to quit           ║")
 		printLn("║                                           ║")
-		printLn("║         PRESS ANY KEY TO START            ║")
+		printLn("║         " + ColorYellow + "PRESS ANY KEY TO START" + ColorReset + "            ║")
 		printLn("║                                           ║")
-		printLn("╚═══════════════════════════════════════════╝")
-		return
-	}
-
-	if g.ReadyToStart {
-		printLn("")
-		printLn("")
-		printLn(fmt.Sprintf("             LEVEL %d", g.Level))
-		printLn("")
-		printLn("      PRESS ANY KEY TO BEGIN...")
-		printLn("")
+		printLn(ColorCyan + "╚═══════════════════════════════════════════╝" + ColorReset)
 		return
 	}
 
@@ -189,28 +189,58 @@ func (g *Game) draw() {
 		}
 	}
 
-	// Draw berries
-	for _, berry := range g.Berries {
-		if berry.X > 0 && berry.X < Width-1 && berry.Y > 0 && berry.Y < Height-1 {
-			grid[berry.Y][berry.X] = '●'
+	// Function to render the grid with colors
+	for y, row := range grid {
+		var line string
+		for x, char := range row {
+			// Check if any entity is at this position to apply color
+			isEntity := false
+			
+			// Player
+			if x == g.Player.X && y == g.Player.Y {
+				line += ColorBlue + string('◆') + ColorReset
+				isEntity = true
+			}
+			
+			// Enemies
+			if !isEntity {
+				for _, enemy := range g.Enemies {
+					if x == enemy.Pos.X && y == enemy.Pos.Y {
+						line += ColorRed + string('◘') + ColorReset
+						isEntity = true
+						break
+					}
+				}
+			}
+			
+			// Berries
+			if !isEntity {
+				for _, berry := range g.Berries {
+					if x == berry.X && y == berry.Y {
+						line += ColorGreen + string('●') + ColorReset
+						isEntity = true
+						break
+					}
+				}
+			}
+			
+			// Walls
+			if !isEntity {
+				for _, wall := range g.Walls {
+					if x == wall.X && y == wall.Y {
+						line += ColorCyan + string('█') + ColorReset
+						isEntity = true
+						break
+					}
+				}
+			}
+			
+			// Borders or empty space
+			if !isEntity {
+				line += string(char)
+			}
 		}
-	}
-
-	// Draw enemies
-	for _, enemy := range g.Enemies {
-		if enemy.Pos.X > 0 && enemy.Pos.X < Width-1 && enemy.Pos.Y > 0 && enemy.Pos.Y < Height-1 {
-			grid[enemy.Pos.Y][enemy.Pos.X] = '☠'
-		}
-	}
-
-	// Draw player
-	if g.Player.X > 0 && g.Player.X < Width-1 && g.Player.Y > 0 && g.Player.Y < Height-1 {
-		grid[g.Player.Y][g.Player.X] = '◆'
-	}
-
-	// Print grid
-	for _, row := range grid {
-		printLn(string(row))
+		printLn(line)
 	}
 
 	// Print stats
@@ -238,8 +268,16 @@ func (g *Game) draw() {
 	printLn(top)
 	printLn(line)
 	printLn(bottom)
-	printLn("")
-	printLn("Controls: W=Up, S=Down, A=Left, D=Right, Q=Quit")
+
+	if g.ReadyToStart {
+		printLn("")
+		printLn(ColorYellow + "╔═══════════════════════════════════════════╗" + ColorReset)
+		printLn(ColorYellow + fmt.Sprintf("║         LEVEL %-2d: PRESS ANY KEY...        ║", g.Level) + ColorReset)
+		printLn(ColorYellow + "╚═══════════════════════════════════════════╝" + ColorReset)
+	} else {
+		printLn("")
+		printLn("Controls: W/A/S/D to move, Q to quit")
+	}
 
 	if g.GameOver {
 		printLn("")
