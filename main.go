@@ -45,6 +45,28 @@ func printLn(s string) {
 	fmt.Print(s + "\r\n")
 }
 
+func (g *Game) isOccupied(pos Position) bool {
+	if g.Player.X == pos.X && g.Player.Y == pos.Y {
+		return true
+	}
+	for _, wall := range g.Walls {
+		if wall.X == pos.X && wall.Y == pos.Y {
+			return true
+		}
+	}
+	for _, berry := range g.Berries {
+		if berry.X == pos.X && berry.Y == pos.Y {
+			return true
+		}
+	}
+	for _, enemy := range g.Enemies {
+		if enemy.Pos.X == pos.X && enemy.Pos.Y == pos.Y {
+			return true
+		}
+	}
+	return false
+}
+
 func (g *Game) initLevel() {
 	g.Player = Position{Width / 2, Height / 2}
 	g.Berries = []Position{}
@@ -52,33 +74,52 @@ func (g *Game) initLevel() {
 	g.Walls = []Position{}
 	g.BerriesNeeded = 5 + g.Level*2
 
+	// Generate some random walls first
+	numWalls := 10 + g.Level*3
+	for i := 0; i < numWalls; i++ {
+		for attempts := 0; attempts < 100; attempts++ {
+			pos := Position{
+				X: rand.Intn(Width-2) + 1,
+				Y: rand.Intn(Height-2) + 1,
+			}
+			if !g.isOccupied(pos) {
+				g.Walls = append(g.Walls, pos)
+				break
+			}
+		}
+	}
+
 	// Generate berries
 	for i := 0; i < g.BerriesNeeded; i++ {
-		g.Berries = append(g.Berries, Position{
-			X: rand.Intn(Width-2) + 1,
-			Y: rand.Intn(Height-2) + 1,
-		})
+		for attempts := 0; attempts < 100; attempts++ {
+			pos := Position{
+				X: rand.Intn(Width-2) + 1,
+				Y: rand.Intn(Height-2) + 1,
+			}
+			if !g.isOccupied(pos) {
+				g.Berries = append(g.Berries, pos)
+				break
+			}
+		}
 	}
+	g.BerriesNeeded = len(g.Berries)
 
 	// Generate enemies (increases with level)
 	numEnemies := 1 + g.Level/2
 	for i := 0; i < numEnemies; i++ {
-		g.Enemies = append(g.Enemies, Enemy{
-			Pos: Position{
+		for attempts := 0; attempts < 100; attempts++ {
+			pos := Position{
 				X: rand.Intn(Width-2) + 1,
 				Y: rand.Intn(Height-2) + 1,
-			},
-			Direction: rand.Intn(4),
-		})
-	}
-
-	// Generate some random walls
-	numWalls := 10 + g.Level*3
-	for i := 0; i < numWalls; i++ {
-		g.Walls = append(g.Walls, Position{
-			X: rand.Intn(Width-2) + 1,
-			Y: rand.Intn(Height-2) + 1,
-		})
+			}
+			if !g.isOccupied(pos) {
+				g.Enemies = append(g.Enemies, Enemy{
+					Pos:       pos,
+					Direction: rand.Intn(4),
+				})
+				break
+			}
+		}
 	}
 }
 
@@ -142,7 +183,7 @@ func (g *Game) draw() {
 	// Print stats
 	printLn("")
 	printLn("╔═══════════════════════════════════════╗")
-	printLn(fmt.Sprintf("║ Level: %-3d  Score: %-6d  Berries: %d/%d ║",
+	printLn(fmt.Sprintf("║ Level: %-3d Score: %-6d Berries: %d/%d ║",
 		g.Level, g.Score, g.BerriesNeeded-len(g.Berries), g.BerriesNeeded))
 	printLn("╚═══════════════════════════════════════╝")
 	printLn("")
