@@ -33,6 +33,8 @@ type Game struct {
 	BerriesNeeded int
 	GameOver      bool
 	Won           bool
+	Started       bool
+	ReadyToStart  bool
 }
 
 func clearScreen() {
@@ -125,6 +127,37 @@ func (g *Game) initLevel() {
 
 func (g *Game) draw() {
 	clearScreen()
+
+	if !g.Started {
+		printLn("╔═══════════════════════════════════════════╗")
+		printLn("║                                           ║")
+		printLn("║   ██   ██  ███████   █████   ██████       ║")
+		printLn("║    ██ ██      ███   ██   ██  ██   ██      ║")
+		printLn("║     ███      ███    ███████  ██████       ║")
+		printLn("║    ██ ██    ███     ██   ██  ██           ║")
+		printLn("║   ██   ██  ███████  ██   ██  ██           ║")
+		printLn("║                                           ║")
+		printLn("╠═══════════════════════════════════════════╣")
+		printLn("║                                           ║")
+		printLn("║   Collect berries, avoid the aliens!      ║")
+		printLn("║                                           ║")
+		printLn("║      W/A/S/D to move, Q to quit           ║")
+		printLn("║                                           ║")
+		printLn("║         PRESS ANY KEY TO START            ║")
+		printLn("║                                           ║")
+		printLn("╚═══════════════════════════════════════════╝")
+		return
+	}
+
+	if g.ReadyToStart {
+		printLn("")
+		printLn("")
+		printLn(fmt.Sprintf("             LEVEL %d", g.Level))
+		printLn("")
+		printLn("      PRESS ANY KEY TO BEGIN...")
+		printLn("")
+		return
+	}
 
 	// Create grid
 	grid := make([][]rune, Height)
@@ -334,7 +367,8 @@ func main() {
 	game := &Game{
 		Level: 1,
 	}
-	game.initLevel()
+	// Initial state: show splash
+	game.draw()
 
 	// Game loop
 	inputChan := make(chan rune)
@@ -350,21 +384,34 @@ func main() {
 	ticker := time.NewTicker(300 * time.Millisecond)
 	defer ticker.Stop()
 
-	game.draw()
-
 	for !game.GameOver {
 		select {
 		case <-ticker.C:
-			if !game.Won {
+			if game.Started && !game.ReadyToStart && !game.Won {
 				game.moveEnemies()
 				game.draw()
 			}
 
 		case input := <-inputChan:
+			if !game.Started {
+				game.Started = true
+				game.ReadyToStart = true
+				game.initLevel()
+				game.draw()
+				continue
+			}
+
+			if game.ReadyToStart {
+				game.ReadyToStart = false
+				game.draw()
+				continue
+			}
+
 			if game.Won {
 				game.Level++
 				game.Won = false
 				game.initLevel()
+				game.ReadyToStart = true
 				game.draw()
 				continue
 			}
